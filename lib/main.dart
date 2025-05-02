@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'layout/home_screen.dart';
+// import 'layout/home_screen.dart';
 import 'pages/login_page.dart';
 import 'pages/welcome_page.dart';
 import 'services/auth_service.dart';
+import 'pages/home_page.dart';
 
 void main() {
   runApp(const NewsApp());
