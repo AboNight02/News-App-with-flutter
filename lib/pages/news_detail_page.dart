@@ -92,7 +92,7 @@ class _NewsDetailPageState extends State<NewsDetailPage> {
               color: Colors.white,
             ),
             padding: EdgeInsets.zero,
-            onPressed: _toggleBookmark,
+            onPressed: _toggleBookmark,  // Use the existing toggle function
           ),
           const SizedBox(width: 16),
         ],
@@ -238,12 +238,40 @@ class _NewsDetailPageState extends State<NewsDetailPage> {
               _buildActionButton(
                 icon: Icons.thumb_up_outlined,
                 label: 'Like',
-                onPressed: () => _showSnackBar('You liked this article'),
+                onPressed: () async {
+                  final prefs = await SharedPreferences.getInstance();
+                  final likedArticles = prefs.getStringList('liked_articles') ?? [];
+                  final articleJson = _getArticleJson();
+                  
+                  setState(() {
+                    if (likedArticles.contains(articleJson)) {
+                      likedArticles.remove(articleJson);
+                      _showSnackBar('Removed from liked articles');
+                    } else {
+                      likedArticles.add(articleJson);
+                      _showSnackBar('Added to liked articles');
+                    }
+                  });
+                  
+                  await prefs.setStringList('liked_articles', likedArticles);
+                },
               ),
               _buildActionButton(
                 icon: Icons.comment_outlined,
                 label: 'Comment',
-                onPressed: () => _showSnackBar('Comments feature coming soon'),
+                onPressed: () {
+                  showModalBottomSheet(
+                    context: context,
+                    isScrollControlled: true,
+                    builder: (context) => Container(
+                      height: MediaQuery.of(context).size.height * 0.75,
+                      padding: EdgeInsets.only(
+                        bottom: MediaQuery.of(context).viewInsets.bottom,
+                      ),
+                      child: CommentSection(articleId: widget.article.title),
+                    ),
+                  );
+                },
               ),
               _buildActionButton(
                 icon: Icons.share,
@@ -289,6 +317,243 @@ class _NewsDetailPageState extends State<NewsDetailPage> {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class CommentSection extends StatefulWidget {
+  final String articleId;
+  
+  const CommentSection({super.key, required this.articleId});
+  
+  @override
+  State<CommentSection> createState() => _CommentSectionState();
+}
+
+class _CommentSectionState extends State<CommentSection> {
+  final _commentController = TextEditingController();
+  List<String> comments = [];
+  
+  @override
+  void initState() {
+    super.initState();
+    _loadComments();
+  }
+  
+  Future<void> _loadComments() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      comments = prefs.getStringList('comments_${widget.articleId}') ?? [];
+    });
+  }
+  
+  Future<void> _addComment() async {
+    if (_commentController.text.isNotEmpty) {
+      final prefs = await SharedPreferences.getInstance();
+      setState(() {
+        comments.add(_commentController.text);
+        _commentController.clear();
+      });
+      await prefs.setStringList('comments_${widget.articleId}', comments);
+    }
+  }
+  
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.grey.withOpacity(0.1),
+                  spreadRadius: 1,
+                  blurRadius: 4,
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                const Text(
+                  'Comments',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.blue[50],
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    '${comments.length}',
+                    style: TextStyle(
+                      color: Colors.blue[700],
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: comments.isEmpty
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.chat_bubble_outline,
+                          size: 48,
+                          color: Colors.grey[400],
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'No comments yet',
+                          style: TextStyle(
+                            color: Colors.grey[600],
+                            fontSize: 16,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Be the first to comment',
+                          style: TextStyle(
+                            color: Colors.grey[400],
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                : ListView.builder(
+                    padding: const EdgeInsets.all(16),
+                    itemCount: comments.length,
+                    itemBuilder: (context, index) {
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 16),
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.grey[50],
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: Colors.grey[200]!,
+                            width: 1,
+                          ),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                CircleAvatar(
+                                  backgroundColor: Colors.blue[100],
+                                  radius: 16,
+                                  child: Text(
+                                    'U',
+                                    style: TextStyle(
+                                      color: Colors.blue[700],
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                const Text(
+                                  'User',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const Spacer(),
+                                Text(
+                                  'Just now',
+                                  style: TextStyle(
+                                    color: Colors.grey[600],
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            Text(
+                              comments[index],
+                              style: const TextStyle(
+                                fontSize: 15,
+                                height: 1.4,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+          ),
+          Container(
+            padding: EdgeInsets.only(
+              left: 16,
+              right: 16,
+              top: 16,
+              bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+            ),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  offset: const Offset(0, -4),
+                  blurRadius: 8,
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _commentController,
+                    decoration: InputDecoration(
+                      hintText: 'Write a comment...',
+                      hintStyle: TextStyle(color: Colors.grey[400]),
+                      filled: true,
+                      fillColor: Colors.grey[100],
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(24),
+                        borderSide: BorderSide.none,
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 12,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.blue[700],
+                    shape: BoxShape.circle,
+                  ),
+                  child: IconButton(
+                    icon: const Icon(Icons.send_rounded),
+                    color: Colors.white,
+                    onPressed: _addComment,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

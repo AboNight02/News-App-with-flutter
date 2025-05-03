@@ -185,6 +185,8 @@ class _NewsHomePageState extends State<NewsHomePage> {
               _buildCategoryTile('Sports', Icons.sports_basketball, 'sports'),
               _buildCategoryTile('Health', Icons.health_and_safety, 'health'),
               _buildCategoryTile('Technology', Icons.computer, 'technology'),
+              _buildCategoryTile('Entertainment', Icons.movie, 'entertainment'),
+              _buildCategoryTile('Science', Icons.science, 'science'),
               const Divider(),
               ListTile(
                 leading: const Icon(Icons.logout, color: Colors.red),

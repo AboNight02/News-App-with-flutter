@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import '../database/database_helper.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
 import '../models/news_article.dart';
 import '../widgets/news_card.dart';
 
@@ -11,8 +12,8 @@ class BookmarksPage extends StatefulWidget {
 }
 
 class _BookmarksPageState extends State<BookmarksPage> {
-  final DatabaseHelper _databaseHelper = DatabaseHelper();
   List<NewsArticle> _bookmarkedArticles = [];
+  bool _isLoading = true;
 
   @override
   void initState() {
@@ -21,10 +22,36 @@ class _BookmarksPageState extends State<BookmarksPage> {
   }
 
   Future<void> _loadBookmarks() async {
-    final bookmarks = await _databaseHelper.getBookmarks();
-    setState(() {
-      _bookmarkedArticles = bookmarks;
-    });
+    setState(() => _isLoading = true);
+    
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final bookmarks = prefs.getStringList('bookmarks') ?? [];
+      
+      final articles = bookmarks.map((bookmarkJson) {
+        final Map<String, dynamic> data = json.decode(bookmarkJson);
+        return NewsArticle(
+          title: data['title'] ?? '',
+          description: data['description'] ?? '',
+          imageUrl: data['imageUrl'] ?? '',
+          source: data['source'] ?? '',
+          publishedAt: data['publishedAt'] ?? '',
+          isBookmarked: true,
+        );
+      }).toList();
+
+      setState(() {
+        _bookmarkedArticles = articles;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() => _isLoading = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error loading bookmarks: $e')),
+        );
+      }
+    }
   }
 
   @override
@@ -35,22 +62,43 @@ class _BookmarksPageState extends State<BookmarksPage> {
         backgroundColor: Colors.white,
         foregroundColor: Colors.black87,
       ),
-      body: _bookmarkedArticles.isEmpty
-          ? const Center(
-              child: Text(
-                'No bookmarks yet',
-                style: TextStyle(fontSize: 16, color: Colors.grey),
+      body: _isLoading 
+        ? const Center(child: CircularProgressIndicator())
+        : _bookmarkedArticles.isEmpty
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.bookmark_border,
+                    size: 64,
+                    color: Colors.grey[400],
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'No bookmarks yet',
+                    style: TextStyle(
+                      fontSize: 18,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                ],
               ),
             )
-          : ListView.builder(
-              padding: const EdgeInsets.all(8),
-              itemCount: _bookmarkedArticles.length,
-              itemBuilder: (context, index) {
-                return Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 4),
-                  child: NewsCard(article: _bookmarkedArticles[index]),
-                );
-              },
+          : RefreshIndicator(
+              onRefresh: _loadBookmarks,
+              child: ListView.builder(
+                padding: const EdgeInsets.all(8),
+                itemCount: _bookmarkedArticles.length,
+                itemBuilder: (context, index) {
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    child: NewsCard(
+                      article: _bookmarkedArticles[index],
+                    ),
+                  );
+                },
+              ),
             ),
     );
   }
