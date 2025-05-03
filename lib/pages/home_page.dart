@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_application_final/models/news_article.dart';
 import 'package:flutter_application_final/pages/bookmarks_page.dart';
+import 'package:flutter_application_final/services/auth_service.dart';
 import 'package:flutter_application_final/widgets/NewsSearchDelegate.dart';
 import 'package:flutter_application_final/widgets/news_card.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:provider/provider.dart';
+import 'login_page.dart';
 
 class NewsHomePage extends StatefulWidget {
   const NewsHomePage({super.key, required this.title});
@@ -59,9 +62,11 @@ class _NewsHomePageState extends State<NewsHomePage> {
       setState(() {
         _isLoading = false;
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: ${e.toString()}')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: ${e.toString()}')),
+        );
+      }
     }
   }
 
@@ -87,11 +92,16 @@ class _NewsHomePageState extends State<NewsHomePage> {
       _selectedCategory = category;
     });
     _fetchNews();
-    Navigator.pop(context);
+    if (mounted) {
+      Navigator.of(context).pop();
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final authService = Provider.of<AuthService>(context);
+    final currentUser = authService.currentUser;
+
     return Scaffold(
       backgroundColor: Colors.grey[100],
       appBar: AppBar(
@@ -134,22 +144,35 @@ class _NewsHomePageState extends State<NewsHomePage> {
                     end: Alignment.bottomRight,
                   ),
                 ),
-                child: const Column(
+                child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
+                    CircleAvatar(
+                      radius: 30,
+                      backgroundColor: Colors.white,
+                      child: Text(
+                        currentUser?.name[0].toUpperCase() ?? '?',
+                        style: const TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.blue,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
                     Text(
-                      'News Categories',
-                      style: TextStyle(
+                      currentUser?.name ?? 'Guest',
+                      style: const TextStyle(
                         color: Colors.white,
-                        fontSize: 24,
+                        fontSize: 18,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    SizedBox(height: 8),
+                    const SizedBox(height: 4),
                     Text(
-                      'Choose your interest',
-                      style: TextStyle(
+                      currentUser?.email ?? '',
+                      style: const TextStyle(
                         color: Colors.white70,
                         fontSize: 14,
                       ),
@@ -162,6 +185,22 @@ class _NewsHomePageState extends State<NewsHomePage> {
               _buildCategoryTile('Sports', Icons.sports_basketball, 'sports'),
               _buildCategoryTile('Health', Icons.health_and_safety, 'health'),
               _buildCategoryTile('Technology', Icons.computer, 'technology'),
+              const Divider(),
+              ListTile(
+                leading: const Icon(Icons.logout, color: Colors.red),
+                title: const Text(
+                  'Logout',
+                  style: TextStyle(color: Colors.red),
+                ),
+                onTap: () async {
+                  await authService.logout();
+                  if (mounted) {
+                    Navigator.of(context).pushReplacement(
+                      MaterialPageRoute(builder: (_) => const LoginPage()),
+                    );
+                  }
+                },
+              ),
             ],
           ),
         ),
