@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_application_final/models/news_article.dart';
+import 'package:flutter_application_final/pages/bookmarks_page.dart';
 import 'package:flutter_application_final/widgets/NewsSearchDelegate.dart';
 import 'package:flutter_application_final/widgets/news_card.dart';
 import 'package:http/http.dart' as http;
@@ -188,14 +189,12 @@ class _NewsHomePageState extends State<NewsHomePage> {
       floatingActionButton: FloatingActionButton(
         backgroundColor: Colors.blue[700],
         onPressed: () {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Bookmark feature coming soon!'),
-              behavior: SnackBarBehavior.floating,
-            ),
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const BookmarksPage()),
           );
         },
-        tooltip: 'Bookmark',
+        tooltip: 'Bookmarks',
         child: const Icon(Icons.bookmark, color: Colors.white),
       ),
     );

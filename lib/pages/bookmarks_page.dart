@@ -31,19 +31,15 @@ class _BookmarksPageState extends State<BookmarksPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('My Bookmarks'),
+        title: const Text('Bookmarks'),
         backgroundColor: Colors.white,
         foregroundColor: Colors.black87,
-        elevation: 0,
       ),
       body: _bookmarkedArticles.isEmpty
           ? const Center(
               child: Text(
                 'No bookmarks yet',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Colors.grey,
-                ),
+                style: TextStyle(fontSize: 16, color: Colors.grey),
               ),
             )
           : ListView.builder(

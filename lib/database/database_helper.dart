@@ -24,7 +24,7 @@ class DatabaseHelper {
       onCreate: (Database db, int version) async {
         await db.execute('''
           CREATE TABLE bookmarks(
-            id TEXT PRIMARY KEY,
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
             title TEXT,
             description TEXT,
             imageUrl TEXT,
@@ -41,7 +41,6 @@ class DatabaseHelper {
     await db.insert(
       'bookmarks',
       {
-        'id': article.title, // Using title as unique identifier
         'title': article.title,
         'description': article.description,
         'imageUrl': article.imageUrl,
@@ -74,7 +73,6 @@ class DatabaseHelper {
   Future<List<NewsArticle>> getBookmarks() async {
     final db = await database;
     final List<Map<String, dynamic>> maps = await db.query('bookmarks');
-    
     return List.generate(maps.length, (i) {
       return NewsArticle(
         title: maps[i]['title'],
@@ -82,6 +80,7 @@ class DatabaseHelper {
         imageUrl: maps[i]['imageUrl'],
         source: maps[i]['source'],
         publishedAt: maps[i]['publishedAt'],
+        isBookmarked: true,
       );
     });
   }

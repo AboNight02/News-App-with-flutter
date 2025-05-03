@@ -1,11 +1,77 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_application_final/models/news_article.dart';
 import 'package:share_plus/share_plus.dart';
+// First run: flutter pub add shared_preferences
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
 
-class NewsDetailPage extends StatelessWidget {
+class NewsDetailPage extends StatefulWidget {
   final NewsArticle article;
 
   const NewsDetailPage({super.key, required this.article});
+
+  @override
+  State<NewsDetailPage> createState() => _NewsDetailPageState();
+}
+
+class _NewsDetailPageState extends State<NewsDetailPage> {
+  bool isBookmarked = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkIfBookmarked();
+  }
+
+  Future<void> _checkIfBookmarked() async {
+    final prefs = await SharedPreferences.getInstance();
+    final bookmarks = prefs.getStringList('bookmarks') ?? [];
+    final articleJson = _getArticleJson();
+    setState(() {
+      isBookmarked = bookmarks.contains(articleJson);
+    });
+  }
+
+  String _getArticleJson() {
+    return jsonEncode({
+      'title': widget.article.title,
+      'description': widget.article.description,
+      'imageUrl': widget.article.imageUrl,
+      'source': widget.article.source,
+      'publishedAt': widget.article.publishedAt,
+    });
+  }
+
+  Future<void> _toggleBookmark() async {
+    final prefs = await SharedPreferences.getInstance();
+    final bookmarks = prefs.getStringList('bookmarks') ?? [];
+    final articleJson = _getArticleJson();
+
+    setState(() {
+      if (isBookmarked) {
+        bookmarks.remove(articleJson);
+        isBookmarked = false;
+        _showSnackBar('Article removed from bookmarks');
+      } else {
+        bookmarks.add(articleJson);
+        isBookmarked = true;
+        _showSnackBar('Article saved to bookmarks');
+      }
+    });
+
+    await prefs.setStringList('bookmarks', bookmarks);
+  }
+
+  void _showSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        duration: const Duration(seconds: 2),
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: Colors.black87,
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -21,18 +87,12 @@ class NewsDetailPage extends StatelessWidget {
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.bookmark_border, color: Colors.white),
+            icon: Icon(
+              isBookmarked ? Icons.bookmark : Icons.bookmark_border,
+              color: Colors.white,
+            ),
             padding: EdgeInsets.zero,
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Saved to bookmarks'),
-                  duration: Duration(seconds: 2),
-                  behavior: SnackBarBehavior.floating,
-                  backgroundColor: Colors.black87,
-                ),
-              );
-            },
+            onPressed: _toggleBookmark,
           ),
           const SizedBox(width: 16),
         ],
@@ -43,25 +103,43 @@ class NewsDetailPage extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Hero(
-                  tag: article.imageUrl,
-                  child: Image.network(
-                    article.imageUrl,
-                    height: 400,
-                    width: double.infinity,
-                    fit: BoxFit.cover,
-                    frameBuilder:
-                        (context, child, frame, wasSynchronouslyLoaded) {
-                      return ColorFiltered(
-                        colorFilter: ColorFilter.mode(
-                          Colors.black.withOpacity(0.3),
-                          BlendMode.darken,
-                        ),
-                        child: child,
-                      );
-                    },
+                if (widget.article.imageUrl.isNotEmpty)
+                  Hero(
+                    tag: widget.article.imageUrl,
+                    child: Image.network(
+                      widget.article.imageUrl,
+                      height: 400,
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Container(
+                          height: 200,
+                          color: Colors.grey[300],
+                          child: const Center(
+                            child: Icon(Icons.error_outline, size: 50),
+                          ),
+                        );
+                      },
+                      frameBuilder:
+                          (context, child, frame, wasSynchronouslyLoaded) {
+                        return ColorFiltered(
+                          colorFilter: ColorFilter.mode(
+                            Colors.black.withOpacity(0.3),
+                            BlendMode.darken,
+                          ),
+                          child: child,
+                        );
+                      },
+                    ),
+                  )
+                else
+                  Container(
+                    height: 200,
+                    color: Colors.grey[300],
+                    child: const Center(
+                      child: Icon(Icons.image_not_supported, size: 50),
+                    ),
                   ),
-                ),
                 Transform.translate(
                   offset: const Offset(0, -50),
                   child: Container(
@@ -76,13 +154,13 @@ class NewsDetailPage extends StatelessWidget {
                       left: 24.0,
                       right: 24.0,
                       top: 20.0,
-                      bottom: 80.0, // Increased bottom padding
+                      bottom: 80.0,
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          article.title,
+                          widget.article.title,
                           style: const TextStyle(
                             fontSize: 28,
                             fontWeight: FontWeight.bold,
@@ -102,7 +180,7 @@ class NewsDetailPage extends StatelessWidget {
                                 borderRadius: BorderRadius.circular(20),
                               ),
                               child: Text(
-                                article.source,
+                                widget.article.source,
                                 style: const TextStyle(
                                   color: Colors.blue,
                                   fontWeight: FontWeight.w600,
@@ -112,7 +190,7 @@ class NewsDetailPage extends StatelessWidget {
                             const SizedBox(width: 12),
                             Expanded(
                               child: Text(
-                                article.publishedAt,
+                                widget.article.publishedAt,
                                 style: TextStyle(
                                   color: Colors.grey[600],
                                   fontSize: 15,
@@ -123,7 +201,9 @@ class NewsDetailPage extends StatelessWidget {
                         ),
                         const SizedBox(height: 24),
                         Text(
-                          article.description,
+                          widget.article.description.isEmpty
+                              ? 'No description available'
+                              : widget.article.description,
                           style: const TextStyle(
                             fontSize: 17,
                             height: 1.6,
@@ -158,26 +238,12 @@ class NewsDetailPage extends StatelessWidget {
               _buildActionButton(
                 icon: Icons.thumb_up_outlined,
                 label: 'Like',
-                onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('You liked this article'),
-                      behavior: SnackBarBehavior.floating,
-                    ),
-                  );
-                },
+                onPressed: () => _showSnackBar('You liked this article'),
               ),
               _buildActionButton(
                 icon: Icons.comment_outlined,
                 label: 'Comment',
-                onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Comments feature coming soon'),
-                      behavior: SnackBarBehavior.floating,
-                    ),
-                  );
-                },
+                onPressed: () => _showSnackBar('Comments feature coming soon'),
               ),
               _buildActionButton(
                 icon: Icons.share,
@@ -185,13 +251,11 @@ class NewsDetailPage extends StatelessWidget {
                 onPressed: () async {
                   try {
                     final String shareContent =
-                        '${article.title}\n\n${article.description}\n\nSource: ${article.source}';
-                    await Share.share(shareContent, subject: article.title);
+                        '${widget.article.title}\n\n${widget.article.description.isEmpty ? 'No description available' : widget.article.description}\n\nSource: ${widget.article.source}';
+                    await Share.share(shareContent,
+                        subject: widget.article.title);
                   } catch (e) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                          content: Text('Failed to share: ${e.toString()}')),
-                    );
+                    _showSnackBar('Failed to share: ${e.toString()}');
                   }
                 },
               ),
