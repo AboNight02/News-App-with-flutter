@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_application_final/models/news_article.dart';
+import 'package:flutter_application_final/services/auth_service.dart';
 import 'package:share_plus/share_plus.dart';
 // First run: flutter pub add shared_preferences
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
+import 'package:provider/provider.dart';
 
 class NewsDetailPage extends StatefulWidget {
   final NewsArticle article;
@@ -92,7 +94,7 @@ class _NewsDetailPageState extends State<NewsDetailPage> {
               color: Colors.white,
             ),
             padding: EdgeInsets.zero,
-            onPressed: _toggleBookmark,  // Use the existing toggle function
+            onPressed: _toggleBookmark, // Use the existing toggle function
           ),
           const SizedBox(width: 16),
         ],
@@ -240,9 +242,10 @@ class _NewsDetailPageState extends State<NewsDetailPage> {
                 label: 'Like',
                 onPressed: () async {
                   final prefs = await SharedPreferences.getInstance();
-                  final likedArticles = prefs.getStringList('liked_articles') ?? [];
+                  final likedArticles =
+                      prefs.getStringList('liked_articles') ?? [];
                   final articleJson = _getArticleJson();
-                  
+
                   setState(() {
                     if (likedArticles.contains(articleJson)) {
                       likedArticles.remove(articleJson);
@@ -252,25 +255,38 @@ class _NewsDetailPageState extends State<NewsDetailPage> {
                       _showSnackBar('Added to liked articles');
                     }
                   });
-                  
+
                   await prefs.setStringList('liked_articles', likedArticles);
                 },
               ),
+              // In the NewsDetailPage class, update the comment button:
               _buildActionButton(
                 icon: Icons.comment_outlined,
                 label: 'Comment',
                 onPressed: () {
-                  showModalBottomSheet(
-                    context: context,
-                    isScrollControlled: true,
-                    builder: (context) => Container(
-                      height: MediaQuery.of(context).size.height * 0.75,
-                      padding: EdgeInsets.only(
-                        bottom: MediaQuery.of(context).viewInsets.bottom,
+                  final authService =
+                      Provider.of<AuthService>(context, listen: false);
+                  if (authService.currentUser != null) {
+                    showModalBottomSheet(
+                      context: context,
+                      isScrollControlled: true,
+                      builder: (context) => Container(
+                        height: MediaQuery.of(context).size.height * 0.75,
+                        padding: EdgeInsets.only(
+                          bottom: MediaQuery.of(context).viewInsets.bottom,
+                        ),
+                        child: CommentSection(
+                          articleId: widget.article.title,
+                          userId: int.parse(
+                              authService.currentUser?.id ?? '0'),
+                        ),
                       ),
-                      child: CommentSection(articleId: widget.article.title),
-                    ),
-                  );
+                    );
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Please login to comment')),
+                    );
+                  }
                 },
               ),
               _buildActionButton(
@@ -324,41 +340,75 @@ class _NewsDetailPageState extends State<NewsDetailPage> {
 
 class CommentSection extends StatefulWidget {
   final String articleId;
-  
-  const CommentSection({super.key, required this.articleId});
-  
+  final int userId;
+
+  const CommentSection({
+    super.key,
+    required this.articleId,
+    required this.userId,
+  });
+
   @override
   State<CommentSection> createState() => _CommentSectionState();
 }
 
 class _CommentSectionState extends State<CommentSection> {
   final _commentController = TextEditingController();
-  List<String> comments = [];
-  
+
+  List<Map<String, dynamic>> comments = [];
+
   @override
   void initState() {
     super.initState();
     _loadComments();
   }
-  
+
   Future<void> _loadComments() async {
     final prefs = await SharedPreferences.getInstance();
+    final commentsJson =
+        prefs.getStringList('comments_${widget.articleId}') ?? [];
+    final loadedComments = commentsJson
+        .map((json) => jsonDecode(json) as Map<String, dynamic>)
+        .toList();
     setState(() {
-      comments = prefs.getStringList('comments_${widget.articleId}') ?? [];
+      comments = loadedComments;
     });
   }
-  
+
   Future<void> _addComment() async {
     if (_commentController.text.isNotEmpty) {
       final prefs = await SharedPreferences.getInstance();
-      setState(() {
-        comments.add(_commentController.text);
-        _commentController.clear();
-      });
-      await prefs.setStringList('comments_${widget.articleId}', comments);
+      final commentsJson =
+          prefs.getStringList('comments_${widget.articleId}') ?? [];
+      final newComment = {
+        'userId': widget.userId,
+        'content': _commentController.text,
+        'createdAt': DateTime.now().toIso8601String(),
+      };
+      commentsJson.add(jsonEncode(newComment));
+      await prefs.setStringList('comments_${widget.articleId}', commentsJson);
+      _commentController.clear();
+      await _loadComments();
     }
   }
-  
+
+  Future<String> _getUserName(int userId) async {
+    return 'User ${userId.toString()}';
+  }
+
+  String _formatDate(DateTime date) {
+    final difference = DateTime.now().difference(date);
+    if (difference.inDays > 0) {
+      return '${difference.inDays}d ago';
+    } else if (difference.inHours > 0) {
+      return '${difference.inHours}h ago';
+    } else if (difference.inMinutes > 0) {
+      return '${difference.inMinutes}m ago';
+    } else {
+      return 'Just now';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -372,7 +422,8 @@ class _CommentSectionState extends State<CommentSection> {
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+              borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(20)),
               boxShadow: [
                 BoxShadow(
                   color: Colors.grey.withOpacity(0.1),
@@ -392,7 +443,8 @@ class _CommentSectionState extends State<CommentSection> {
                 ),
                 const SizedBox(width: 8),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
                     color: Colors.blue[50],
                     borderRadius: BorderRadius.circular(12),
@@ -442,60 +494,67 @@ class _CommentSectionState extends State<CommentSection> {
                     padding: const EdgeInsets.all(16),
                     itemCount: comments.length,
                     itemBuilder: (context, index) {
-                      return Container(
-                        margin: const EdgeInsets.only(bottom: 16),
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: Colors.grey[50],
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: Colors.grey[200]!,
-                            width: 1,
-                          ),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
+                      final comment = comments[index];
+                      return FutureBuilder<String>(
+                        future: _getUserName(comment['userId']),
+                        builder: (context, snapshot) {
+                          return Container(
+                            margin: const EdgeInsets.only(bottom: 16),
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: Colors.grey[50],
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: Colors.grey[200]!,
+                                width: 1,
+                              ),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                CircleAvatar(
-                                  backgroundColor: Colors.blue[100],
-                                  radius: 16,
-                                  child: Text(
-                                    'U',
-                                    style: TextStyle(
-                                      color: Colors.blue[700],
-                                      fontWeight: FontWeight.bold,
+                                Row(
+                                  children: [
+                                    CircleAvatar(
+                                      backgroundColor: Colors.blue[100],
+                                      radius: 16,
+                                      child: Text(
+                                        (snapshot.data ?? 'U')[0].toUpperCase(),
+                                        style: TextStyle(
+                                          color: Colors.blue[700],
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
                                     ),
-                                  ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      snapshot.data ?? 'User',
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    const Spacer(),
+                                    Text(
+                                      _formatDate(
+                                          DateTime.parse(comment['createdAt'])),
+                                      style: TextStyle(
+                                        color: Colors.grey[600],
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                                const SizedBox(width: 8),
-                                const Text(
-                                  'User',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                const Spacer(),
+                                const SizedBox(height: 12),
                                 Text(
-                                  'Just now',
-                                  style: TextStyle(
-                                    color: Colors.grey[600],
-                                    fontSize: 12,
+                                  comment['content'],
+                                  style: const TextStyle(
+                                    fontSize: 15,
+                                    height: 1.4,
                                   ),
                                 ),
                               ],
                             ),
-                            const SizedBox(height: 12),
-                            Text(
-                              comments[index],
-                              style: const TextStyle(
-                                fontSize: 15,
-                                height: 1.4,
-                              ),
-                            ),
-                          ],
-                        ),
+                          );
+                        },
                       );
                     },
                   ),

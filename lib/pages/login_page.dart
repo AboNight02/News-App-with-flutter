@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/auth_service.dart';
 import 'home_page.dart';
+import 'register_page.dart';  // Add this import
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -160,12 +161,41 @@ class _LoginPageState extends State<LoginPage> {
                 ),
                 const SizedBox(height: 20),
                 Center(
-                  child: TextButton(
-                    onPressed: () {},
-                    child: const Text(
-                      "Forgot your password?",
-                      style: TextStyle(color: Colors.grey),
-                    ),
+                  child: Column(
+                    children: [
+                      TextButton(
+                        onPressed: () {},
+                        child: const Text(
+                          "Forgot your password?",
+                          style: TextStyle(color: Colors.grey),
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Text(
+                            "Don't have an account? ",
+                            style: TextStyle(color: Colors.grey),
+                          ),
+                          TextButton(
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(builder: (_) => const RegisterPage()),
+                              );
+                            },
+                            child: const Text(
+                              "Register",
+                              style: TextStyle(
+                                color: Color(0xFFF857A6),
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
                 ),
               ],

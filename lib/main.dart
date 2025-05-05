@@ -1,13 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_application_final/pages/home_page.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'package:share_plus/share_plus.dart';
 import 'package:provider/provider.dart';
-// import 'layout/home_screen.dart';
-import 'pages/login_page.dart';
-import 'pages/welcome_page.dart';
 import 'services/auth_service.dart';
-import 'pages/home_page.dart';
+import 'package:flutter_application_final/pages/welcome_page.dart';
 
 void main() {
-  runApp(const NewsApp());
+  runApp(
+    ChangeNotifierProvider(
+      create: (_) => AuthService(),
+      child: const NewsApp(),
+    ),
+  );
 }
 
 class NewsApp extends StatelessWidget {
@@ -15,10 +21,8 @@ class NewsApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MultiProvider(
-      providers: [
-        ChangeNotifierProvider(create: (_) => AuthService()),
-      ],
+    return ChangeNotifierProvider(
+      create: (_) => AuthService(),
       child: MaterialApp(
         title: 'News App',
         theme: ThemeData(
