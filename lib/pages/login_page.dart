@@ -125,22 +125,26 @@ class _LoginPageState extends State<LoginPage> {
                         width: double.infinity,
                         height: 50,
                         child: ElevatedButton(
+                          
                           onPressed: _isLoading ? null : _login,
                           style: ElevatedButton.styleFrom(
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(30),
+                              borderRadius: BorderRadius.circular(10),
                             ),
                             padding: EdgeInsets.zero,
                             elevation: 4,
+                            backgroundColor: Color.fromRGBO(156, 39, 176, 1)
                           ),
                           child: Ink(
-                            decoration: BoxDecoration(
-                              gradient: const LinearGradient(
-                                colors: [Color(0xFFF857A6), Color(0xFFFF5858)],
-                              ),
-                              borderRadius: BorderRadius.circular(30),
-                            ),
+                            // decoration: BoxDecoration(
+                            //   gradient: const LinearGradient(
+                            //     colors: ,
+                            //   ),
+                            //   borderRadius: BorderRadius.circular(30),
+                            // ),
+
                             child: Container(
+                              
                               alignment: Alignment.center,
                               child: _isLoading
                                   ? const CircularProgressIndicator(color: Colors.white)
@@ -149,7 +153,8 @@ class _LoginPageState extends State<LoginPage> {
                                       style: TextStyle(
                                         fontSize: 16,
                                         fontWeight: FontWeight.bold,
-                                        color: Colors.white,
+                                        color: Color.fromRGBO(255, 255, 255, 1),
+                                       
                                       ),
                                     ),
                             ),
@@ -188,7 +193,7 @@ class _LoginPageState extends State<LoginPage> {
                             child: const Text(
                               "Register",
                               style: TextStyle(
-                                color: Color(0xFFF857A6),
+                                color: Color.fromRGBO(156, 39, 176, 1),
                                 fontWeight: FontWeight.bold,
                               ),
                             ),

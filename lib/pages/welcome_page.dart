@@ -12,7 +12,8 @@ class WelcomePage extends StatelessWidget {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Color(0xFFF857A6), Color(0xFFFF5858)],
+            colors: [Color.fromRGBO(66, 165, 245, 1),
+              Color.fromRGBO(156, 39, 176, 1),],    
           ),
         ),
         child: SafeArea(

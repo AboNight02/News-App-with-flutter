@@ -81,20 +81,24 @@ class _RegisterPageState extends State<RegisterPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
+    backgroundColor: const Color(0xFFF8F9FA),
       body: Container(
         width: MediaQuery.of(context).size.width,
         height: MediaQuery.of(context).size.height,
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Colors.blue.shade400,
-              Colors.purple.shade500,
-            ],
-          ),
-        ),
+
+        // decoration: BoxDecoration(
+        //   gradient: LinearGradient(
+        //     begin: Alignment.topLeft,
+        //     end: Alignment.bottomRight,
+        //     colors: [
+        //       // Colors.blue.shade400,
+        //       // Colors.purple.shade500,
+        //       const Color(0xFFF857A6),
+        //       const Color(0xFFFF5858),
+        //     ],
+        //   ),
+        // ),
+        
         child: SafeArea(
           child: SingleChildScrollView(
             padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -110,9 +114,9 @@ class _RegisterPageState extends State<RegisterPage> {
                 children: [
                   const SizedBox(height: 40),
                   Text(
-                    'Create\nAccount',
+                    'Create New Account',
                     style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                          color: Colors.white,
+                          color: Colors.black,
                           fontWeight: FontWeight.bold,
                         ),
                   ),
@@ -202,13 +206,13 @@ class _RegisterPageState extends State<RegisterPage> {
                             child: ElevatedButton(
                               onPressed: _isLoading ? null : _register,
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.purple.shade500,
+                                backgroundColor: Color.fromRGBO(156, 39, 176, 1),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                               ),
                               child: _isLoading
-                                  ? const CircularProgressIndicator(color: Colors.white)
+                                  ? const CircularProgressIndicator(color: Colors.grey)
                                   : const Text(
                                       'Create Account',
                                       style: TextStyle(
@@ -235,7 +239,7 @@ class _RegisterPageState extends State<RegisterPage> {
                       child: const Text(
                         'Already have an account? Login',
                         style: TextStyle(
-                          color: Colors.white,
+                          color:  Colors.grey,
                           fontSize: 16,
                           fontWeight: FontWeight.w500,
                         ),
